@@ -5,6 +5,40 @@
 
 
 
+
+#Dashboard admin password
+PASS='admin'
+
+#NIC
+NIC1='eth1'     #PUBLIC NETWORK NIC
+NIC2='eth2'     #PRIVATE NETWORK NIC
+
+#Static IP
+#IPADDR='192.168.1.244'
+#NETMASK='255.255.255.0'
+#GATEWAY='192.168.1.1'
+
+#Network
+#   eth0 - internet
+#   eth1 - managmenet   10.0.0.0/24
+#   eth2 - tunnel       10.0.1.0/24
+
+
+
+#Controller node
+CONT_MNG='10.0.0.11'
+CONT_TUN='10.0.1.11'
+
+#Network node
+NET_MNG='10.0.0.21'
+NET_TUN='10.0.1.21'
+
+#Computer node
+COMP_MNG='10.0.0.31'
+COMP_TUN='10.0.1.31'
+
+
+
 #------------VARIABLE------------
 ARC=$(/bin/uname -m)
 
@@ -46,10 +80,38 @@ else
 #generate keys
 #openssl rand -hex 10
 
+            ## Disable SELINUX
+            /usr/sbin/setenforce 0
+            /bin/sed -i.org -e 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
+    
+            ## Edit Kernel Parameter to enable Routing
+            #change curernt parameter
+            /bin/echo '1' > /proc/sys/net/ipv4/ip_forward
+            /bin/echo '0' > /proc/sys/net/ipv4/conf/default/rp_filter
+    
+            #edit sysctl.conf
+            /bin/sed -i.org -e 's/net.ipv4.ip_forward = 0/net.ipv4_ip_forward = 1/g' /etc/sysctl.conf
+            /bin/sed -i.org -e 's/net.ipv4.conf.default.rp_filter = 1/net.ipv4.conf.default.rp_filter = 0/g' /etc/sysctl.conf
+    
+            #add more variable
+            /bin/cat << _SYSCTLCONF_ >> /etc/sysctl.conf
+            net.ipv4.conf.all.rp_filter = 0
+            net.ipv4.conf.all.forwarding = 1
+_SYSCTLCONF_
+
+    
+#            #edit /etc/rc.local
+#            /bin/echo 'echo 0 > /proc/sys/net/bridge/bridge-nf-call-iptables' >> /etc/rc.local
+#            /bin/echo 'echo 0 > /proc/sys/net/bridge/bridge-nf-call-ip6tables' >> /etc/rc.local
+#            /bin/echo 'echo 0 > /proc/sys/net/bridge/bridge-nf-call-arptables' >> /etc/rc.local
+    
+            /sbin/sysctl -p /etc/sysctl.conf
+
+
             ## add EPEL repo
             /bin/rpm --import http://ftp.riken.jp/Linux/fedora/epel/RPM-GPG-KEY-EPEL-6
             /bin/rpm -ivh http://ftp.riken.jp/Linux/fedora/epel/6/${ARC}/epel-release-6-8.noarch.rpm
-            /bin/sed -i.org -e "s/enabled.*=.*1/enabled=1/g" /etc/yum.repos.d/epel.repo
+            /bin/sed -i.org -e "s/enabled.*=.*0/enabled=1/g" /etc/yum.repos.d/epel.repo
 
             #install ntp
             /usr/bin/yum install -y ntp
@@ -65,6 +127,11 @@ else
             /usr/bin/yum install -y mysql mysql-server MySQL-python
             /sbin/chkconfig mysqld on
             /sbin/service mysqld restart
+            case "$OS" in
+                "Fedora") cp -f conf/my.cnf.fed /etc/my.cnf ;;
+                "CentOS") cp -f conf/my.cnf.cent /etc/my.cnf ;;          
+            esac
+            sed -i '2i\bind-address = $CONT_MNG' /etc/my.cnf            
 
             #install QPID message server
             /usr/bin/yum install -y qpid-cpp-server
