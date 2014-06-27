@@ -131,7 +131,11 @@ _SYSCTLCONF_
                 "Fedora") cp -f conf/my.cnf.fed /etc/my.cnf ;;
                 "CentOS") cp -f conf/my.cnf.cent /etc/my.cnf ;;          
             esac
+<<<<<<< HEAD
             sed -i "2i\bind-address = ${CONT_MNG}" /etc/my.cnf            
+=======
+            sed -i "2i\bind-address = $CONT_MNG" /etc/my.cnf            
+>>>>>>> 4fcb314be35ec1bd8d789a48fc87cd0d75d12aaf
 
             #install QPID message server
             /usr/bin/yum install -y qpid-cpp-server
