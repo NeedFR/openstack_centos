@@ -67,13 +67,13 @@ else
             /sbin/service mysqld restart
 
             #install QPID message server
-            /usr/bin/yum install qpid-cpp-server
+            /usr/bin/yum install -y qpid-cpp-server
             /sbin/chkconfig qpidd on
             /sbin/service qpidd restart
             #install RDO Icehouse
             #/usr/bin/yum install yum-plugin-priorities
             /usr/bin/yum install -y http://rdo.fedorapeople.org/rdo-release.rpm
-            /usr/bin/yum install openstack-utils
+            /usr/bin/yum install -y openstack-utils
 
             #upgrade package
             /usr/bin/yum -y upgrade
