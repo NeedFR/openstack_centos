@@ -157,8 +157,8 @@ _SYSCTLCONF_
             /usr/bin/yum install -y qpid-cpp-server
             /sbin/chkconfig qpidd on
             /sbin/service qpidd restart
-            #echo "auth=no" >> /etc/qpidd.conf
-
+            /bin/sed -i.org -e 's/auth=yes/auth=no/g' /etc/qpidd.conf
+            
             #install RDO Icehouse
             #/usr/bin/yum install yum-plugin-priorities
             /usr/bin/yum install -y http://rdo.fedorapeople.org/rdo-release.rpm
