@@ -3,8 +3,24 @@
 #openstack
 #basic installation
 
+#generate keys
+#openssl rand -hex 10
+KEYSTONE_DBPASS='364af2ed97cd57841f45'
+DEMO_PASS=''
+ADMIN_PASS='364af2ed97cd57841f45'
+GLANCE_DBPASS='364af2ed97cd57841f45'
+GLANCE_PASS='364af2ed97cd57841f45'
+NOVA_PASS='364af2ed97cd57841f45'
+DASH_DBPASS='364af2ed97cd57841f45'
+CINDER_DBPASS='364af2ed97cd57841f45'
+CINDER_PASS='364af2ed97cd57841f45'
+NEUTRON_DBPASS='364af2ed97cd57841f45'
+NEUTRON_PASS='364af2ed97cd57841f45'
+TROVE_DBPASS='364af2ed97cd57841f45'
+TROVE_PASS='364af2ed97cd57841f45'
 
 
+MYSQL_PASS='364af2ed97cd57841f45'
 
 #Dashboard admin password
 PASS='admin'
@@ -77,9 +93,6 @@ else
         else
             echo -e "${COLOR_LIGHT_BLUE}System Architecture\t\t${COLOR_LIGHT_GREEN}[OK]${COLOR_DEFAULT}"
 
-#generate keys
-#openssl rand -hex 10
-
             ## Disable SELINUX
             /usr/sbin/setenforce 0
             /bin/sed -i.org -e 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
@@ -123,7 +136,7 @@ _SYSCTLCONF_
             /bin/sed -i.org -e 's/PermitRootLogin no/PermitRootLogin yes/gi' /etc/ssh/sshd_config
             /sbin/service sshd reload
 
-            #install mysql
+            #install mysql client/server MySQL-python
             /usr/bin/yum install -y mysql mysql-server MySQL-python
             /sbin/chkconfig mysqld on
             /sbin/service mysqld restart
@@ -133,10 +146,19 @@ _SYSCTLCONF_
             esac
             sed -i "2i\bind-address = $CONT_MNG" /etc/my.cnf            
 
+            #Allow aceess globaly
+            mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '$MYSQL_PASS' WITH GRANT OPTION;"
+
+            #change root password 
+            mysql -u root -e "UPDATE mysql.user SET Password = PASSWORD('$MYSQL_PASS') WHERE User = 'root';"
+            mysql -u root -e "FLUSH PRIVILEGES;"
+
             #install QPID message server
             /usr/bin/yum install -y qpid-cpp-server
             /sbin/chkconfig qpidd on
             /sbin/service qpidd restart
+            #echo "auth=no" >> /etc/qpidd.conf
+
             #install RDO Icehouse
             #/usr/bin/yum install yum-plugin-priorities
             /usr/bin/yum install -y http://rdo.fedorapeople.org/rdo-release.rpm
