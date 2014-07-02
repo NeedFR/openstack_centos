@@ -2,6 +2,26 @@
 #
 #Service Password: 548295a7ebf749b74d42
 #
+#Variables
+KEYSTONE_DBPASS='364af2ed97cd57841f45'
+DEMO_PASS='364af2ed97cd57841f45'
+ADMIN_PASS='364af2ed97cd57841f45'
+ADMIN_TOKEN='364af2ed97cd57841f45'
+GLANCE_DBPASS='364af2ed97cd57841f45'
+GLANCE_PASS='364af2ed97cd57841f45'
+NOVA_DBPASS='364af2ed97cd57841f45'
+NOVA_PASS='364af2ed97cd57841f45'
+DASH_DBPASS='364af2ed97cd57841f45'
+CINDER_DBPASS='364af2ed97cd57841f45'
+CINDER_PASS='364af2ed97cd57841f45'
+NEUTRON_DBPASS='364af2ed97cd57841f45'
+NEUTRON_PASS='364af2ed97cd57841f45'
+
+#MYSQL_PASS
+MYSQL_PASS='364af2ed97cd57841f45'
+
+ADMIN_EMAIL='admin@devtrax.com'
+
 #Controller node
 CONT_MNG='10.0.0.11'
 CONT_TUN='10.0.1.11'
@@ -63,60 +83,67 @@ COMP_TUN='10.0.1.31'
 #			Compute 02: 69.43.73.228
 #			Compute 03: 69.43.73.???
 #
-### Keystone Setup ###
-echo "Installing Identity Service (Keystone)...";
-yum install --enablerepo=epel openstack-keystone python-keystoneclient -y;
-echo "Done.";
+#================================================ KEYSTONE Setup =========================================================== 
 
-echo "Configuring Keystone...";
-openstack-config --set /etc/keystone/keystone.conf database connection mysql://keystone:548295a7ebf749b74d42@controller/keystone;
-su -s /bin/sh -c "keystone-manage db_sync" keystone;
-openstack-config --set /etc/keystone/keystone.conf DEFAULT admin_token 548295a7ebf749b74d42;
+#Install keystone packages
+yum install --enablerepo=epel openstack-keystone python-keystoneclient -y;
+
+
+#Configure keystone
+openstack-config --set /etc/keystone/keystone.conf database connection mysql://keystone:$KEYSTONE_DBPASS@controller/keystone;
+mysql -u root -p $MYSQL_PASS -e "CREATE DATABASE keystone;"
+mysql -u root -p $MYSQL_PASS -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY '$KEYSTONE_DBPASS';"
+mysql -u root -p $MYSQL_PASS -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY '$KEYSTONE_DBPASS';"
+#sync the database
+su -s /bin/sh -c "keystone-manage db_sync" keystone
+
+
+openstack-config --set /etc/keystone/keystone.conf DEFAULT admin_token $ADMIN_TOKEN
 keystone-manage pki_setup --keystone-user keystone --keystone-group keystone;
 chown -R keystone:keystone /etc/keystone/ssl;
 chmod -R o-rwx /etc/keystone/ssl;
+
 (crontab -l -u keystone 2>&1 | grep -q token_flush) || echo '@hourly /usr/bin/keystone-manage token_flush >/var/log/keystone/keystone-tokenflush.log 2>&1' >> /var/spool/cron/keystone;
-echo "Done.";
 
-echo "Starting service and setting chkconfig...";
-service openstack-keystone start;
-chkconfig openstack-keystone on;
-echo "Done.";
 
-echo "Setting Keystone authorization tokens...";
-export OS_SERVICE_TOKEN=548295a7ebf749b74d42;
+#start keyston service and enable at bootup
+/sbin/service openstack-keystone restart
+/sbin/chkconfig openstack-keystone on
+
+
+#Keystone auth token
+export OS_SERVICE_TOKEN=$ADMIN_TOKEN;
 export OS_SERVICE_ENDPOINT=http://controller:35357/v2.0;
-echo "Done.";
 
-echo "Making admin account...";
-keystone user-create --name=admin --pass=548295a7ebf749b74d42 --email=admin@devtrax.com;
+#Create Admin Account
+keystone user-create --name=admin --pass=$ADMIN_PASS --email=$ADMIN_EMAIL;
 keystone role-create --name=admin;
 keystone tenant-create --name=admin --description="Admin Tenant";
 keystone user-role-add --user=admin --tenant=admin --role=admin;
 keystone user-role-add --user=admin --role=_member_ --tenant=admin;
-echo "Done.";
 
-echo "Making user accounts..."
-#keystone user-create --name=demo --pass=DEMO_PASS --email=DEMO_EMAIL
-#keystone tenant-create --name=demo --description="Demo Tenant"
-#keystone user-role-add --user=demo --role=_member_ --tenant=demo
-keystone user-create --name=austin --pass=548295a7ebf749b74d42 --email=austin@devtrax.com;
+#Create User Accounts
+    #keystone user-create --name=demo --pass=DEMO_PASS --email=DEMO_EMAIL
+    #keystone tenant-create --name=demo --description="Demo Tenant"
+    #keystone user-role-add --user=demo --role=_member_ --tenant=demo
+keystone user-create --name=austin --pass=$ADMIN_PASS --email=austin@devtrax.com;
 keystone tenant-create --name=basicuser --description="Basic User Tenant";
 keystone user-role-add --user=austin --role=_member_ --tenant=basicuser;
-keystone user-create --name=tim --pass=548295a7ebf749b74d42 --email=tim@devtrax.com;
+keystone user-create --name=tim --pass=$ADMIN_PASS --email=tim@devtrax.com;
 keystone tenant-create --name=basicuser --description="Basic User Tenant";
 keystone user-role-add --user=tim --role=_member_ --tenant=basicuser;
-keystone user-create --name=morinor --pass=548295a7ebf749b74d42 --email=morinor@devtrax.com;
+keystone user-create --name=morinor --pass=$ADMIN_PASS --email=morinor@devtrax.com;
 keystone tenant-create --name=basicuser --description="Basic User Tenant";
 keystone user-role-add --user=morinor --role=_member_ --tenant=basicuser;
-keystone user-create --name=zhaox --pass=548295a7ebf749b74d42 --email=zhaox@devtrax.com;
+keystone user-create --name=zhaox --pass=$ADMIN_PASS --email=zhaox@devtrax.com;
 keystone tenant-create --name=basicuser --description="Basic User Tenant";
 keystone user-role-add --user=zhaox --role=_member_ --tenant=basicuser;
-echo "Done.";
 
-echo "Making Service tenant...";
+
+#Create Service Tenant
 keystone tenant-create --name=service --description="Service Tenant";
-echo "Done.";
+
+
 
 echo "Defining service and API endpoints..."
 keystone service-create --name=keystone --type=identity description="OpenStack Identity";
@@ -130,7 +157,11 @@ source	/root/admin-openrc.sh;
 echo "Done.";
 ### DONE ###
 
-### Glance Setup ###
+
+
+
+
+#================================================ Glance Setup ===========================================================
 echo "Installing Image Service (Glance)...";
 yum install --enablerepo=epel openstack-glance python-glanceclient -y;
 echo "Done.";

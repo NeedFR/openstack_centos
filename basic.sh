@@ -165,7 +165,7 @@ _SYSCTLCONF_
             /usr/bin/yum install -y openstack-utils
 
             #upgrade package
-            /usr/bin/yum -y upgrade
+         #   /usr/bin/yum -y upgrade
 
             echo -e "${COLOR_LIGHT_BLUE}Inital configuration is done.${COLOR_DEFAULT}"
             echo -e "${COLOR_RED}Please reboot the system to apply all of the configuration${COLOR_DEFAULT}"
