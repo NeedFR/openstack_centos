@@ -91,9 +91,9 @@ yum install --enablerepo=epel openstack-keystone python-keystoneclient -y;
 
 #Configure keystone
 openstack-config --set /etc/keystone/keystone.conf database connection mysql://keystone:$KEYSTONE_DBPASS@controller/keystone;
-mysql -u root -p $MYSQL_PASS -e "CREATE DATABASE keystone;"
-mysql -u root -p $MYSQL_PASS -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY '$KEYSTONE_DBPASS';"
-mysql -u root -p $MYSQL_PASS -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY '$KEYSTONE_DBPASS';"
+mysql -u root --password=$MYSQL_PASS -e "CREATE DATABASE keystone;"
+mysql -u root --password=$MYSQL_PASS -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY '$KEYSTONE_DBPASS';"
+mysql -u root --password=$MYSQL_PASS -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY '$KEYSTONE_DBPASS';"
 #sync the database
 su -s /bin/sh -c "keystone-manage db_sync" keystone
 
