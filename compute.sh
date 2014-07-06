@@ -1,8 +1,27 @@
 #!/bin/bash -x
-#
+#COMPUTE node
 #Service Password: 548295a7ebf749b74d42
 #
-#variables
+#Variables
+KEYSTONE_DBPASS='364af2ed97cd57841f45'
+DEMO_PASS='364af2ed97cd57841f45'
+ADMIN_PASS='364af2ed97cd57841f45'
+ADMIN_TOKEN='364af2ed97cd57841f45'
+GLANCE_DBPASS='364af2ed97cd57841f45'
+GLANCE_PASS='364af2ed97cd57841f45'
+NOVA_DBPASS='364af2ed97cd57841f45'
+NOVA_PASS='364af2ed97cd57841f45'
+DASH_DBPASS='364af2ed97cd57841f45'
+CINDER_DBPASS='364af2ed97cd57841f45'
+CINDER_PASS='364af2ed97cd57841f45'
+NEUTRON_DBPASS='364af2ed97cd57841f45'
+NEUTRON_PASS='364af2ed97cd57841f45'
+
+#MYSQL_PASS
+MYSQL_PASS='364af2ed97cd57841f45'
+
+ADMIN_EMAIL='admin@devtrax.com'
+
 #Controller node
 CONT_MNG='10.0.0.11'
 CONT_TUN='10.0.1.11'
@@ -14,23 +33,6 @@ NET_TUN='10.0.1.21'
 #Computer node
 COMP_MNG='10.0.0.31'
 COMP_TUN='10.0.1.31'
-
-KEYSTONE_DBPASS='364af2ed97cd57841f45'
-DEMO_PASS=''
-ADMIN_PASS='364af2ed97cd57841f45'
-GLANCE_DBPASS='364af2ed97cd57841f45'
-GLANCE_PASS='364af2ed97cd57841f45'
-NOVA_PASS='364af2ed97cd57841f45'
-NOVA_DBPASS='364af2ed97cd57841f45'
-DASH_DBPASS='364af2ed97cd57841f45'
-CINDER_DBPASS='364af2ed97cd57841f45'
-CINDER_PASS='364af2ed97cd57841f45'
-NEUTRON_DBPASS='364af2ed97cd57841f45'
-NEUTRON_PASS='364af2ed97cd57841f45'
-TROVE_DBPASS='364af2ed97cd57841f45'
-TROVE_PASS='364af2ed97cd57841f45'
-
-
 #Notes:
 #	Network Config:
 #		Managment Network:
@@ -99,25 +101,38 @@ yum install --enablerepo=epel -y openstack-nova-compute
 echo -e "${C_LIGHT_GREEN}[ OK ]${C_DEFAULT}"
 echo -e "${C_LIGHT_BLUE}Configuring Nova...${C_DEFAULT}"
 
+##Configure keystone
+#mysql -u root --password=$MYSQL_PASS -e "CREATE DATABASE nova;"
+#mysql -u root --password=$MYSQL_PASS -e "GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'localhost' IDENTIFIED BY '$NOVA_DBPASS';"
+#mysql -u root --password=$MYSQL_PASS -e "GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY '$NOVA_DBPASS';"
+##sync the database
+#su -s /bin/sh -c "keystone-manage db_sync" keystone
 
+#Edit /etc/nova/nova.conf
+openstack-config --set /etc/nova/nova.conf database connection mysql://nova:$NOVA_DBPASS@controller/nova
+openstack-config --set /etc/nova/nova.conf DEFAULT auth_strategy keystone
+openstack-config --set /etc/nova/nova.conf keystone_authtoken auth_uri http://controller:5000
+openstack-config --set /etc/nova/nova.conf keystone_authtoken auth_host controller
+openstack-config --set /etc/nova/nova.conf keystone_authtoken auth_protocol http
+openstack-config --set /etc/nova/nova.conf keystone_authtoken auth_port 35357
+openstack-config --set /etc/nova/nova.conf keystone_authtoken admin_user nova
+openstack-config --set /etc/nova/nova.conf keystone_authtoken admin_tenant_name service
+openstack-config --set /etc/nova/nova.conf keystone_authtoken admin_password $NOVA_PASS
 
-openstack-config --set /etc/nova/nova.conf database connection mysql://nova:$NOVA_DBPASS@controller/nova;
-openstack-config --set /etc/nova/nova.conf DEFAULT auth_strategy keystone;
-openstack-config --set /etc/nova/nova.conf keystone_authtoken auth_uri http://controller:5000;
-openstack-config --set /etc/nova/nova.conf keystone_authtoken auth_host controller;
-openstack-config --set /etc/nova/nova.conf keystone_authtoken auth_protocol http;
-openstack-config --set /etc/nova/nova.conf keystone_authtoken auth_port 35357;
-openstack-config --set /etc/nova/nova.conf keystone_authtoken admin_user nova;
-openstack-config --set /etc/nova/nova.conf keystone_authtoken admin_tenant_name service;
-openstack-config --set /etc/nova/nova.conf keystone_authtoken admin_password $ADMIN_PASS;
+#Configure QPID message blocker
 openstack-config --set /etc/nova/nova.conf DEFAULT rpc_backend qpid
-openstack-config --set /etc/nova/nova.conf DEFAULT qpid_hostname controller;
-openstack-config --set /etc/nova/nova.conf DEFAULT my_ip $COMP_MNG;
+openstack-config --set /etc/nova/nova.conf DEFAULT qpid_hostname controller
+
+#Configure Compute to provide remote console access to instances
+openstack-config --set /etc/nova/nova.conf DEFAULT my_ip $COMP_MNG
 openstack-config --set /etc/nova/nova.conf DEFAULT vnc_enabled True;
-openstack-config --set /etc/nova/nova.conf DEFAULT vncserver_listen 0.0.0.0;
-openstack-config --set /etc/nova/nova.conf DEFAULT vncserver_proxyclient_address $COMP_MNG;
-openstack-config --set /etc/nova/nova.conf DEFAULT novncproxy_base_url http://controller:6080/vnc_auto.html;
-openstack-config --set /etc/nova/nova.conf DEFAULT glance_host controller;
+openstack-config --set /etc/nova/nova.conf DEFAULT vncserver_listen 0.0.0.0
+openstack-config --set /etc/nova/nova.conf DEFAULT vncserver_proxyclient_address $COMP_MNG
+openstack-config --set /etc/nova/nova.conf DEFAULT novncproxy_base_url http://controller:6080/vnc_auto.html
+#Specify the GLANCE host
+openstack-config --set /etc/nova/nova.conf DEFAULT glance_host controller
+
+
 # Check this before running
 # openstack-config --set /etc/nova/nova.conf libvirt virt_type qemu;
 echo "Done.";
@@ -194,29 +209,29 @@ service neutron-openvswitch-agent start
 chkconfig neutron-openvswitch-agent on
 ### Configur networks later ###
 
-### Cinder Setup ###
-echo "Installing Block Storage Service (Cinder)...";
-yum install openstack-cinder scsi-target-utils -y;
-echo "Done.";
-
-echo "Configuring Cinder...";
-openstack-config --set /etc/cinder/cinder.conf DEFAULT auth_strategy keystone;
-openstack-config --set /etc/cinder/cinder.conf keystone_authtoken auth_uri http://controller:5000;
-openstack-config --set /etc/cinder/cinder.conf keystone_authtoken auth_host controller;
-openstack-config --set /etc/cinder/cinder.conf keystone_authtoken auth_protocol http;
-openstack-config --set /etc/cinder/cinder.conf keystone_authtoken auth_port 35357;
-openstack-config --set /etc/cinder/cinder.conf keystone_authtoken admin_user cinder;
-openstack-config --set /etc/cinder/cinder.conf keystone_authtoken admin_tenant_name service;
-openstack-config --set /etc/cinder/cinder.conf keystone_authtoken admin_password 548295a7ebf749b74d42;
-openstack-config --set /etc/cinder/cinder.conf DEFAULT rpc_backend cinder.openstack.common.rpc.impl_qpid;
-openstack-config --set /etc/cinder/cinder.conf DEFAULT qpid_hostname controller;
-openstack-config --set /etc/cinder/cinder.conf database connection mysql://cinder:548295a7ebf749b74d42@controller/cinder;
-openstack-config --set /etc/cinder/cinder.conf DEFAULT glance_host controller;
-echo "Done.";
-
-echo "Starting services...";
-service openstack-cinder-volume start;
-service tgtd start;
-chkconfig openstack-cinder-volume on;
-chkconfig tgtd on;
-echo "Done.";
+#### Cinder Setup ###
+#echo "Installing Block Storage Service (Cinder)...";
+#yum install openstack-cinder scsi-target-utils -y;
+#echo "Done.";
+#
+#echo "Configuring Cinder...";
+#openstack-config --set /etc/cinder/cinder.conf DEFAULT auth_strategy keystone;
+#openstack-config --set /etc/cinder/cinder.conf keystone_authtoken auth_uri http://controller:5000;
+#openstack-config --set /etc/cinder/cinder.conf keystone_authtoken auth_host controller;
+#openstack-config --set /etc/cinder/cinder.conf keystone_authtoken auth_protocol http;
+#openstack-config --set /etc/cinder/cinder.conf keystone_authtoken auth_port 35357;
+#openstack-config --set /etc/cinder/cinder.conf keystone_authtoken admin_user cinder;
+#openstack-config --set /etc/cinder/cinder.conf keystone_authtoken admin_tenant_name service;
+#openstack-config --set /etc/cinder/cinder.conf keystone_authtoken admin_password 548295a7ebf749b74d42;
+#openstack-config --set /etc/cinder/cinder.conf DEFAULT rpc_backend cinder.openstack.common.rpc.impl_qpid;
+#openstack-config --set /etc/cinder/cinder.conf DEFAULT qpid_hostname controller;
+#openstack-config --set /etc/cinder/cinder.conf database connection mysql://cinder:548295a7ebf749b74d42@controller/cinder;
+#openstack-config --set /etc/cinder/cinder.conf DEFAULT glance_host controller;
+#echo "Done.";
+#
+#echo "Starting services...";
+#service openstack-cinder-volume start;
+#service tgtd start;
+#chkconfig openstack-cinder-volume on;
+#chkconfig tgtd on;
+#echo "Done.";
