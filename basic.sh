@@ -152,6 +152,8 @@ _SYSCTLCONF_
             #change root password 
             mysql -u root -e "UPDATE mysql.user SET Password = PASSWORD('$MYSQL_PASS') WHERE User = 'root';"
             mysql -u root -e "FLUSH PRIVILEGES;"
+            /sbin/chkconfig mysqld on
+            /sbin/service mysqld restart
 
             #install QPID message server
             /usr/bin/yum install -y qpid-cpp-server
