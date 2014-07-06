@@ -133,18 +133,19 @@ openstack-config --set /etc/nova/nova.conf DEFAULT novncproxy_base_url http://co
 openstack-config --set /etc/nova/nova.conf DEFAULT glance_host controller
 
 
-# Check this before running
-# openstack-config --set /etc/nova/nova.conf libvirt virt_type qemu;
-echo "Done.";
+# Check hardware acceleration for virutal machine
+if [ `egrep -c '(vmx|svm)' /proc/cpuinfo` == 0 ]; then
+    openstack-config --set /etc/nova/nova.conf libvirt virt_type qemu
+fi
 
-echo "Starting service and setting chkconfig...";
+
+#starting services
 service libvirtd start;
 service messagebus start;
 chkconfig libvirtd on;
 chkconfig messagebus on;
 service openstack-nova-compute start;
 chkconfig openstack-nova-compute on;
-echo "Done.";
 
 #================================================ Neutron Setup ===========================================================
 #install Neutron pacakges
