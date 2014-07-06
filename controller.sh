@@ -330,8 +330,9 @@ openstack-config --set /etc/nova/nova.conf DEFAULT linuxnet_interface_driver nov
 openstack-config --set /etc/nova/nova.conf DEFAULT firewall_driver nova.virt.firewall.NoopFirewallDriver
 openstack-config --set /etc/nova/nova.conf DEFAULT security_group_api neutron
 
-#openstack-config --set /etc/nova/nova.conf DEFAULT service_neutron_metadata_proxy true
-#openstack-config --set /etc/nova/nova.conf DEFAULT neutron_metadata_proxy_shared_secret $METADATA_SECRET
+# ONLY ON CONTROLLER node, Configure Compute node to use Metadata service
+openstack-config --set /etc/nova/nova.conf DEFAULT service_neutron_metadata_proxy true
+openstack-config --set /etc/nova/nova.conf DEFAULT neutron_metadata_proxy_shared_secret $METADATA_SECRET
 ln -s /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugin.ini
 
 #Restart and set Neutron to start on boot

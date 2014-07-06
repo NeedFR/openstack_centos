@@ -88,12 +88,19 @@ C_DEFAULT='\033[0m'
 
 
 
-### Nova Setup ###
-echo -e "${C_LIGHT_BLUE}Installing Compute Service (Nova)...${C_DEFAULT}";
-yum install --enablerepo=epel -y openstack-nova-compute;
-echo -e "${C_LIGHT_GREEN}[ OK ]${C_DEFAULT}";
+#================================================Nova  Setup ===========================================================
+#net.ipv4.conf.all.rp_filter=0
+#net.ipv4.conf.default.rp_filter=0
+#sysctl -p
 
-echo -e "${C_LIGHT_BLUE}Configuring Nova...${C_DEFAULT}";
+echo -e "${C_LIGHT_BLUE}Installing Compute Service (Nova)...${C_DEFAULT}"
+#Install Nova compute packages
+yum install --enablerepo=epel -y openstack-nova-compute
+echo -e "${C_LIGHT_GREEN}[ OK ]${C_DEFAULT}"
+echo -e "${C_LIGHT_BLUE}Configuring Nova...${C_DEFAULT}"
+
+
+
 openstack-config --set /etc/nova/nova.conf database connection mysql://nova:$NOVA_DBPASS@controller/nova;
 openstack-config --set /etc/nova/nova.conf DEFAULT auth_strategy keystone;
 openstack-config --set /etc/nova/nova.conf keystone_authtoken auth_uri http://controller:5000;
@@ -124,60 +131,67 @@ service openstack-nova-compute start;
 chkconfig openstack-nova-compute on;
 echo "Done.";
 
-echo "Installing Networking Service (Neutron)...";
-yum install openstack-neutron-ml2 openstack-neutron-openvswitch -y;
-echo "Done.";
+#================================================ Neutron Setup ===========================================================
+#install Neutron pacakges
+yum install -y openstack-neutron-ml2 openstack-neutron-openvswitch
 
-echo "Configuring Neutron...";
-openstack-config --set /etc/neutron/neutron.conf DEFAULT auth_strategy keystone;
-openstack-config --set /etc/neutron/neutron.conf keystone_authtoken auth_uri http://controller:5000;
-openstack-config --set /etc/neutron/neutron.conf keystone_authtoken auth_host controller;
-openstack-config --set /etc/neutron/neutron.conf keystone_authtoken auth_protocol http;
-openstack-config --set /etc/neutron/neutron.conf keystone_authtoken auth_port 35357;
-openstack-config --set /etc/neutron/neutron.conf keystone_authtoken admin_tenant_name service;
-openstack-config --set /etc/neutron/neutron.conf keystone_authtoken admin_user neutron;
-openstack-config --set /etc/neutron/neutron.conf keystone_authtoken admin_password 548295a7ebf749b74d42;
-openstack-config --set /etc/neutron/neutron.conf DEFAULT rpc_backend neutron.openstack.common.rpc.impl_qpid;
-openstack-config --set /etc/neutron/neutron.conf DEFAULT qpid_hostname controller;
-openstack-config --set /etc/neutron/neutron.conf DEFAULT core_plugin ml2;
-openstack-config --set /etc/neutron/neutron.conf DEFAULT service_plugins router;
-openstack-config --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 type_drivers gre;
-openstack-config --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 tenant_network_types gre;
-openstack-config --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 mechanism_drivers openvswitch;
-openstack-config --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2_type_gre tunnel_id_ranges 1:1000;
-openstack-config --set /etc/neutron/plugins/ml2/ml2_conf.ini ovs local_ip $COMP_TUN;
-openstack-config --set /etc/neutron/plugins/ml2/ml2_conf.ini ovs tunnel_type gre;
-openstack-config --set /etc/neutron/plugins/ml2/ml2_conf.ini ovs enable_tunneling True;
-openstack-config --set /etc/neutron/plugins/ml2/ml2_conf.ini securitygroup firewall_driver neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver;
-openstack-config --set /etc/neutron/plugins/ml2/ml2_conf.ini securitygroup enable_security_group True;
-echo "Done.";
+#Configure Neutron common components [authentication mechanism, message broker, and plugins ]
+openstack-config --set /etc/neutron/neutron.conf DEFAULT auth_strategy keystone
+openstack-config --set /etc/neutron/neutron.conf keystone_authtoken auth_uri http://controller:5000
+openstack-config --set /etc/neutron/neutron.conf keystone_authtoken auth_host controller
+openstack-config --set /etc/neutron/neutron.conf keystone_authtoken auth_protocol http
+openstack-config --set /etc/neutron/neutron.conf keystone_authtoken auth_port 35357
+openstack-config --set /etc/neutron/neutron.conf keystone_authtoken admin_tenant_name service
+openstack-config --set /etc/neutron/neutron.conf keystone_authtoken admin_user neutron
+openstack-config --set /etc/neutron/neutron.conf keystone_authtoken admin_password $NEUTRON_PASS
 
-echo "Enabling OVS...";
-service openvswitch start;
-chkconfig openvswitch on;
-ovs-vsctl add-br br-int;
-echo "Done.";
+#Configure the message broker (QPID)
+openstack-config --set /etc/neutron/neutron.conf DEFAULT rpc_backend neutron.openstack.common.rpc.impl_qpid
+openstack-config --set /etc/neutron/neutron.conf DEFAULT qpid_hostname controller
 
-echo "Configuring Nova...";
-openstack-config --set /etc/nova/nova.conf DEFAULT network_api_class nova.network.neutronv2.api.API;
-openstack-config --set /etc/nova/nova.conf DEFAULT neutron_url http://controller:9696;
-openstack-config --set /etc/nova/nova.conf DEFAULT neutron_auth_strategy keystone;
-openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_tenant_name service;
-openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_username neutron;
-openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_password 548295a7ebf749b74d42;
-openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_auth_url http://controller:35357/v2.0;
-openstack-config --set /etc/nova/nova.conf DEFAULT linuxnet_interface_driver nova.network.linux_net.LinuxOVSInterfaceDriver;
-openstack-config --set /etc/nova/nova.conf DEFAULT firewall_driver nova.virt.firewall.NoopFirewallDriver;
-openstack-config --set /etc/nova/nova.conf DEFAULT security_group_api neutron;
-echo "Done.";
+#Configure Neutron to use Modular Layer 2 (ML2) plugin and associated services
+openstack-config --set /etc/neutron/neutron.conf DEFAULT core_plugin ml2
+openstack-config --set /etc/neutron/neutron.conf DEFAULT service_plugins router
+#add ML2 plugins
+openstack-config --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 type_drivers gre
+openstack-config --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 tenant_network_types gre
+openstack-config --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 mechanism_drivers openvswitch
+openstack-config --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2_type_gre tunnel_id_ranges 1:1000
+openstack-config --set /etc/neutron/plugins/ml2/ml2_conf.ini ovs local_ip $COMP_TUN
+openstack-config --set /etc/neutron/plugins/ml2/ml2_conf.ini ovs tunnel_type gre
+openstack-config --set /etc/neutron/plugins/ml2/ml2_conf.ini ovs enable_tunneling True
+openstack-config --set /etc/neutron/plugins/ml2/ml2_conf.ini securitygroup firewall_driver neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
+openstack-config --set /etc/neutron/plugins/ml2/ml2_conf.ini securitygroup enable_security_group True
 
-echo "Completing settup..."
-ln -s /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugin.ini;
-cp /etc/init.d/neutron-openvswitch-agent /etc/init.d/neutron-openvswitch-agent.orig;
-sed -i 's,plugins/openvswitch/ovs_neutron_plugin.ini,plugin.ini,g' /etc/init.d/neutron-openvswitch-agent;
-service openstack-nova-compute restart;
-service neutron-openvswitch-agent start;
-chkconfig neutron-openvswitch-agent on;
+
+#start OVS (Open vSwitch) and run at boot
+service openvswitch start
+chkconfig openvswitch on
+
+#Add integration brdige
+ovs-vsctl add-br br-int
+
+#Configure Nova to use Neutron and associate with Network node
+openstack-config --set /etc/nova/nova.conf DEFAULT network_api_class nova.network.neutronv2.api.API
+openstack-config --set /etc/nova/nova.conf DEFAULT neutron_url http://controller:9696
+openstack-config --set /etc/nova/nova.conf DEFAULT neutron_auth_strategy keystone
+openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_tenant_name service
+openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_username neutron
+openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_password $NEUTRON_PASS
+openstack-config --set /etc/nova/nova.conf DEFAULT neutron_admin_auth_url http://controller:35357/v2.0
+openstack-config --set /etc/nova/nova.conf DEFAULT linuxnet_interface_driver nova.network.linux_net.LinuxOVSInterfaceDriver
+openstack-config --set /etc/nova/nova.conf DEFAULT firewall_driver nova.virt.firewall.NoopFirewallDriver
+openstack-config --set /etc/nova/nova.conf DEFAULT security_group_api neutron
+
+
+#Finalizing service
+ln -s /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugin.ini
+cp /etc/init.d/neutron-openvswitch-agent /etc/init.d/neutron-openvswitch-agent.orig
+sed -i 's,plugins/openvswitch/ovs_neutron_plugin.ini,plugin.ini,g' /etc/init.d/neutron-openvswitch-agent
+
+service openstack-nova-compute restart
+service neutron-openvswitch-agent start
+chkconfig neutron-openvswitch-agent on
 ### Configur networks later ###
 
 ### Cinder Setup ###
