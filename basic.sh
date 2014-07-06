@@ -144,7 +144,6 @@ _SYSCTLCONF_
                 "Fedora") cp -f conf/my.cnf.fed /etc/my.cnf ;;
                 "CentOS") cp -f conf/my.cnf.cent /etc/my.cnf ;;          
             esac
-            sed -i "2i\bind-address = $CONT_MNG" /etc/my.cnf            
 
             #Allow aceess globaly
             mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '$MYSQL_PASS' WITH GRANT OPTION;"
