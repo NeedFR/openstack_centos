@@ -171,10 +171,11 @@ service neutron-openvswitch-agent start
 service neutron-l3-agent start
 service neutron-dhcp-agent start
 service neutron-metadata-agent start
+service neutron-server start
 chkconfig neutron-openvswitch-agent on
 chkconfig neutron-l3-agent on
 chkconfig neutron-dhcp-agent on
 chkconfig neutron-metadata-agent on
-
+chkconfig neutron-server on
 
 

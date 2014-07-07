@@ -148,7 +148,7 @@ unset OS_SERVICE_TOKEN OS_SERVICE_ENDPOINT;
 
 #set Admin Credential 
 cp -f conf/temp.admin.sh /root/admin-openrc.sh
-sed -i.org -e 's/ADMIN_PASS/$ADMIN_PASS/g' /root/admin-openrc.sh
+sed -i.org -e "s/ADMIN_PASS/$ADMIN_PASS/g" /root/admin-openrc.sh
 source	/root/admin-openrc.sh
 
 
