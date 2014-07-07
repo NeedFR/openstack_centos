@@ -416,7 +416,9 @@ yum install -y memcached python-memcached mod_wsgi openstack-dashboard
 #Enable accessing dashboard from anywhere 
 # ALLOWED_HOSTS = ['*'] 
 
-/bin/sed -i.org -e "s\OPENSTACK_HOST = \"[0-9]\{1,3\}.[0-9]\{1,3\}.[0-9]\{1,3\}.[0-9]\{1,3\}\"/OPENSTACK_HOST = \"controller\"/"  /etc/openstack-dashboard/local_settings
+/bin/sed -i.org -e "s/OPENSTACK_HOST = \"[0-9]\{1,3\}.[0-9]\{1,3\}.[0-9]\{1,3\}.[0-9]\{1,3\}\"/OPENSTACK_HOST = \"controller\"/"  /etc/openstack-dashboard/local_settings
+/bin/sed -i.org "14i\ALLOWED_HOSTS = [\'\*\']" /etc/openstack-dashboard/local_settings
+
 
 #add SELinux Policy
 setsebool -P httpd_can_network_connect on
