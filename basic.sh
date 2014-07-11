@@ -162,7 +162,8 @@ _SYSCTLCONF_
             
             #install RDO Icehouse
             #/usr/bin/yum install yum-plugin-priorities
-            /usr/bin/yum install -y http://rdo.fedorapeople.org/rdo-release.rpm
+            #/usr/bin/yum install -y http://rdo.fedorapeople.org/rdo-release.rpm
+            /usr/bin/yum install -y http://repos.fedorapeople.org/repos/openstack/openstack-icehouse/rdo-release-icehouse-3.noarch.rpm
             /usr/bin/yum install -y openstack-utils
 
             #upgrade package
